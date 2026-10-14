@@ -227,6 +227,29 @@ export async function switchToSession(sessionPath, options) {
   return result;
 }
 
+/**
+ * 把运行时搬回指定工作目录：拆掉当前运行时，在目标目录重建一个空会话。
+ *
+ * 为什么不用 runtime.newSession()：那个方法用的就是**运行时当前的 cwd**
+ * （SDK 内部是 `SessionManager.create(this.cwd, ...)` 加 `createRuntime({ cwd: this.cwd })`），
+ * 所以在已经切到别处的运行时上调它，只会在原地再开一个空会话，目录换不了。
+ *
+ * 为什么不用 switchSession()：它需要一个**已经存在**的会话文件路径，而新会话是
+ * 懒写的 —— 第一条消息落盘之前根本没有文件可切。
+ *
+ * ⚠️ 调用方必须保证此刻没有生成在跑：disposeRuntime() 里有 listeners.clear()，
+ * 正在流式输出的那次请求会静默断掉订阅（不报错，只是不再吐字）。
+ *
+ * @param {string} cwd 目标工作目录
+ */
+export async function resetToWorkspace(cwd) {
+  console.log("[Pi] 重建运行时，工作目录回到：", cwd);
+
+  await disposeRuntime();
+
+  return getRuntime(cwd);
+}
+
 /** 关闭运行时并清空订阅。用于进程退出。 */
 export async function disposeRuntime() {
   detachSession?.();

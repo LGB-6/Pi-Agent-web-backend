@@ -44,8 +44,14 @@ export function forgetSession(id) {
   entriesById.delete(id);
 }
 
-/** Windows 上盘符大小写不固定，路径比对统一按平台规则归一。 */
-function normalizeForCompare(target) {
+/**
+ * Windows 上盘符大小写不固定，路径比对统一按平台规则归一。
+ *
+ * 导出是给「路径是否落在某个根之内」这类断言用的（文件树的范围检查）。
+ * 这类断言必须跟这里用同一套归一规则 —— 各写一份迟早会分叉，
+ * 而分叉的方向通常是"某一处漏判"，也就是越界。
+ */
+export function normalizeForCompare(target) {
   const resolved = path.resolve(target);
   return process.platform === "win32" ? resolved.toLowerCase() : resolved;
 }
